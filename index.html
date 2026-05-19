@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+
+<script src="https://unpkg.com/pinyin-pro@3.18.2/dist/index.js"></script>
+
+<style>
+textarea {
+  text-align: start;
+  margin-left: 20px;
+  font-size: 25px;
+  border: .1px solid rgba(0, 0, 0, 0.39);
+  border-radius: 10px;
+  box-shadow: 0 0 50px rgb(0, 0, 0) inset;
+  
+}
+button {
+  padding: 8px 20px;
+  margin: 5px;
+  cursor: pointer;
+  box-shadow: 0 0 10px rgb(202, 255, 9) inset;
+  border: none;
+  border-radius: 20px;
+}
+.lang-btns {
+  margin-top: 10px;
+}
+.output{
+    padding: 20px 40px;
+    border: 0 10px solid black;
+}
+</style>
+</head>
+
+<body style="text-align:center;font-family:Arial;margin-top:30px;">
+
+<h2>Chimdevit Translator</h2>
+
+<textarea id="inputText" rows="10" cols="40"></textarea>
+
+<br>
+
+<div class="lang-btns">
+  <button onclick="setLang('en')">English</button>
+  <button onclick="setLang('zh')">Chinese</button>
+  <button onclick="setLang('km')">Khmer</button>
+  <button onclick="speakCurrent()">Speak</button>
+</div>
+
+<div class="output">
+    <h3>Output:</h3>
+    <p id="outputText"></p>
+    <p id="pinyin"></p>
+</div>
+
+<script>
+let chineseText = "";
+let khmerText = "";
+let currentLang = "en";
+
+function setLang(lang) {
+  currentLang = lang;
+  translateText();
+}
+
+async function translateText() {
+  let text = document.getElementById("inputText").value;
+
+  document.getElementById("outputText").innerText = "Loading...";
+
+  let langpair = "en|en";
+
+  if (currentLang === "zh") langpair = "en|zh-CN";
+  if (currentLang === "km") langpair = "en|km";
+
+  let url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=${langpair}`;
+
+  let res = await fetch(url);
+  let data = await res.json();
+  let result = data.responseData.translatedText;
+  document.getElementById("outputText").innerText = result;
+  // Chinese + Pinyin
+  if (currentLang === "zh") {
+    chineseText = result;
+
+    if (window.pinyinPro) {
+      let py = window.pinyinPro.pinyin(chineseText, {
+        toneType: 'symbol'
+      });
+      document.getElementById("pinyin").innerText = py;
+    }
+  } else {
+    document.getElementById("pinyin").innerText = "";
+  }
+
+  // Khmer
+  if (currentLang === "km") {
+    khmerText = result;
+  }
+}
+
+function speak(text, lang) {
+  let u = new SpeechSynthesisUtterance(text);
+  u.lang = lang;
+  speechSynthesis.speak(u);
+}
+
+function speakCurrent() {
+  let text = document.getElementById("outputText").innerText;
+
+  if (currentLang === "en") {
+    speak(text, "en-US");
+  }
+
+  if (currentLang === "zh") {
+    speak(text, "zh-CN");
+    setTimeout(() => {
+      speak(document.getElementById("pinyin").innerText, "en-US");
+    }, 1500);
+  }
+
+  if (currentLang === "km") {
+    speak(text, "km-KH");
+  }
+}
+</script>
+
+</body>
+</html>
